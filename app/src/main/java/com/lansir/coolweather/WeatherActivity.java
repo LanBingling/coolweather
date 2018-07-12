@@ -1,5 +1,6 @@
 package com.lansir.coolweather;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.lansir.coolweather.gson.Forecast;
 import com.lansir.coolweather.gson.Weather;
+import com.lansir.coolweather.service.AutoUpdateService;
 import com.lansir.coolweather.util.HttpUtil;
 import com.lansir.coolweather.util.ToastUtil;
 import com.lansir.coolweather.util.Utility;
@@ -156,6 +158,10 @@ public class WeatherActivity extends AppCompatActivity {
                             editor.apply();
                             mWeatherId = weather.basic.weatherId;
                             showWeatherInfo(weather);
+
+                            // 一旦选中某个城市并成功更新后，AutoUpdateService会在后台一致运行
+                            Intent intent = new Intent(WeatherActivity.this, AutoUpdateService.class);
+                            startService(intent);
                         } else {
                             ToastUtil.showToast(WeatherActivity.this, "获取天气信息失败(status)", Toast.LENGTH_SHORT);
                         }
@@ -198,7 +204,6 @@ public class WeatherActivity extends AppCompatActivity {
      * 处理并展示 Weather 实体类中的数据
      */
     private void showWeatherInfo(Weather weather) {
-
         String cityName = weather.basic.cityName;
         String updateTime = weather.basic.update.updateTime.split(" ")[1];
         String degree = weather.now.temperature + " ℃";
