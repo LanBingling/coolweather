@@ -19,6 +19,13 @@ allprojects {
     repositories {
         google()
         jcenter()
+
+        //libs-snapshot-local
+        maven { url "http://192.168.40.22:8081/artifactory/libs-snapshot-local" }
+
+        //libs-release-local
+        maven { url "http://192.168.40.22:8081/artifactory/libs-release-local" }
+
     }
 }
 

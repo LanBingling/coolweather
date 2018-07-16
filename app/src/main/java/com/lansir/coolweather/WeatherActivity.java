@@ -21,18 +21,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.google.gson.Gson;
 import com.lansir.coolweather.gson.Forecast;
 import com.lansir.coolweather.gson.Weather;
 import com.lansir.coolweather.service.AutoUpdateService;
 import com.lansir.coolweather.util.HttpUtil;
 import com.lansir.coolweather.util.ToastUtil;
 import com.lansir.coolweather.util.Utility;
+import com.meelive.ingkee.network.http.responser.RspInkeDefault;
 
 import java.io.IOException;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
 
 public class WeatherActivity extends AppCompatActivity {
 
@@ -98,7 +102,7 @@ public class WeatherActivity extends AppCompatActivity {
         if (bingPic != null) {
             Glide.with(this).load(bingPic).into(bingPicImg);
         } else {
-            loadBingPic();
+            //loadBingPic();
         }
 
         navButton.setOnClickListener(new View.OnClickListener() {
@@ -132,7 +136,7 @@ public class WeatherActivity extends AppCompatActivity {
      */
     public void requestWeather(String weatherId) {
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
-        HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
+        /*HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 e.printStackTrace();
@@ -169,8 +173,54 @@ public class WeatherActivity extends AppCompatActivity {
                     }
                 });
             }
-        });
-        loadBingPic();
+        });*/
+
+        // 将网络请求更改为映客网络库
+        HttpUtil.reqWeatherInfo(weatherUrl).observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<RspInkeDefault<Weather>>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        ToastUtil.showToast(WeatherActivity.this, "error", Toast.LENGTH_SHORT);
+                        swipeRefresh.setRefreshing(false);
+                    }
+
+                    @Override
+                    public void onNext(RspInkeDefault<Weather> rsp) {
+
+                        ToastUtil.showToast(WeatherActivity.this, "test0", Toast.LENGTH_SHORT);
+
+                        if (rsp != null && rsp.getResultEntity() != null) {
+
+                            ToastUtil.showToast(WeatherActivity.this, "test1", Toast.LENGTH_SHORT);
+
+                            Weather weather = rsp.getResultEntity();
+                            if (weather != null && "ok".equals(weather.status)) {
+                                //SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
+                                //editor.putString("weather", new Gson().toJson(weather));
+                                //editor.apply();
+                                mWeatherId = weather.basic.weatherId;
+                                showWeatherInfo(weather);
+
+                                // 一旦选中某个城市并成功更新后，AutoUpdateService会在后台一致运行
+                                //Intent intent = new Intent(WeatherActivity.this, AutoUpdateService.class);
+                                //startService(intent);
+                            } else {
+                                ToastUtil.showToast(WeatherActivity.this, "获取天气信息失败(status)", Toast.LENGTH_SHORT);
+                            }
+                            swipeRefresh.setRefreshing(false);
+                        } else {
+                            ToastUtil.showToast(WeatherActivity.this, "获取天气信息失败(null)", Toast.LENGTH_SHORT);
+                            swipeRefresh.setRefreshing(false);
+                        }
+                    }
+                });
+
+        //loadBingPic();
     }
 
     /**
